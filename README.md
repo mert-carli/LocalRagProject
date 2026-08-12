@@ -1,5 +1,22 @@
 # Local RAG Assistant
 
+<div align="center">
+
+  <img src="./assets/demo.png" alt="Local RAG Assistant Arayüz Ekran Görüntüsü" width="800">
+
+  <br><br>
+
+  **Tamamen offline çalışan kişisel yapay zeka belge asistanı**
+
+  PDF ve Markdown dosyalarınızla konuşun.  
+  Verileriniz cihazınızdan çıkmaz.
+
+</div>
+
+---
+
+## Genel Bakış
+
 Local RAG Assistant, kişisel veya kurumsal belgeleriniz (PDF, Markdown) üzerinden tamamen çevrimdışı (offline) soru-cevap yapmanızı sağlayan yerel bir RAG (Retrieval-Augmented Generation) uygulamasıdır. 
 
 Verileriniz hiçbir dış sunucuya gönderilmez; tüm metin parçalama, indeksleme ve vektör arama işlemleri yerel bilgisayarınızda gerçekleşir.
@@ -71,6 +88,7 @@ Sunucu başlatıldıktan sonra tarayıcınızdan **`http://localhost:3000`** adr
 
 ```text
 LocalRagProject/
+├── assets/              # README görselleri ve ekran görüntüleri
 ├── database/            # SQLite veritabanı dosyası (rag.db)
 ├── docs/                # İndekslenecek belgeler (PDF/MD)
 ├── public/              # Web arayüzü dosyaları (HTML, CSS, JS)
