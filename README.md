@@ -97,6 +97,19 @@ Sistem, Ollama veya Foundry Local SDK üzerinde çalışan tüm açık kaynaklı
 
 ---
 
+## Sistem Gereksinimleri
+
+Yerel yapay zeka modellerini akıcı bir şekilde çalıştırabilmeniz için gereken bilgisayar donanım özellikleri:
+
+| Donanım | Minimum | Önerilen |
+| :--- | :--- | :--- |
+| **RAM (Bellek)** | 8 GB | 16 GB veya üzeri |
+| **İşlemci (CPU)** | 4 Çekirdekli CPU | 8+ Çekirdekli modern CPU |
+| **Ekran Kartı (GPU)** | Entegre (CPU modunda çalışabilir) | NVIDIA CUDA (4GB+ VRAM) veya Apple Silicon |
+| **Depolama** | 5 GB boş alan (HDD) | SSD (Hızlı model yükleme için) |
+
+---
+
 ## Mimari ve Teknolojiler
 
 - **Backend:** Node.js, Express.js
