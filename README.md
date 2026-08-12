@@ -84,6 +84,19 @@ flowchart TD
 
 ---
 
+## Desteklenen Modeller
+
+Sistem, Ollama veya Foundry Local SDK üzerinde çalışan tüm açık kaynaklı LLM'ler ile tam uyumludur. Test edilen ve önerilen modeller:
+
+| Model | Kullanım |
+| :--- | :--- |
+| **Mistral** | Genel kullanım ve Türkçe yanıt başarım dengesi |
+| **Llama 3** | Daha detaylı ve mantıksal açıdan kaliteli cevaplar |
+| **Phi-3** | Düşük donanım ve kısıtlı RAM kapasitesi |
+| **Gemma** | Hızlı yanıt ve hafif kullanım |
+
+---
+
 ## Mimari ve Teknolojiler
 
 - **Backend:** Node.js, Express.js
