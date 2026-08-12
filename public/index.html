@@ -1,0 +1,3010 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Local-RAG Assistant — Private Offline Intelligence</title>
+    <link rel="icon" type="image/jpeg" href="logo.jpg">
+    <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #000000;
+            --surface-main: #050505;
+            --panel-bg: rgba(10, 10, 10, 0.95);
+            --card-bg: #121212;
+            --hover-bg: #1e1e1e;
+            --input-bg: #080808;
+            --panel-border: rgba(255, 255, 255, 0.16);
+            --panel-border-hover: rgba(255, 255, 255, 0.35);
+            --active-border: #00E699;
+            --text-primary: #ffffff;
+            --text-muted: #d1d5db;
+            --text-dim: #9ca3af;
+            --emerald-accent: #00E699;
+            --success-green: #00E699;
+        }
+
+        html[data-theme="light"] {
+            --bg-deep: #f3f4f6;
+            --surface-main: #ffffff;
+            --panel-bg: rgba(255, 255, 255, 0.95);
+            --card-bg: #f9fafb;
+            --hover-bg: #e5e7eb;
+            --input-bg: #ffffff;
+            --panel-border: rgba(0, 0, 0, 0.1);
+            --panel-border-hover: rgba(0, 0, 0, 0.2);
+            --active-border: #059669;
+            --text-primary: #111827;
+            --text-muted: #4b5563;
+            --text-dim: #6b7280;
+            --emerald-accent: #059669;
+            --success-green: #059669;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-deep);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Fullscreen Canvas Background */
+        #space-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Soft Ambient Light Behind Workspace */
+        .ambient-glow {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 750px;
+            height: 750px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 230, 153, 0.06), transparent 70%);
+            filter: blur(120px);
+            pointer-events: none;
+            z-index: 1;
+            animation: ambient-pulse 8s ease-in-out infinite;
+        }
+
+        @keyframes ambient-pulse {
+            0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.12); }
+        }
+
+        /* Main Viewport Container */
+        .app-viewport {
+            position: relative;
+            z-index: 2;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 24px 20px 20px 20px;
+        }
+
+        /* Enterprise Header */
+        .workspace-header {
+            position: relative;
+            z-index: 30;
+            width: 100%;
+            max-width: 1180px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 10px 12px;
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            animation: surface-enter 0.45s ease-out both;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .workspace-header:hover {
+            border-color: var(--panel-border-hover);
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 230, 153, 0.1);
+        }
+
+        .header-brand {
+            min-width: 0;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-emblem {
+            width: 44px;
+            height: 44px;
+            flex: 0 0 auto;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            isolation: isolate;
+        }
+
+        .brand-logo-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            object-fit: cover;
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 0 16px rgba(0, 0, 0, 0.6);
+            animation: emblem-glow 4s ease-in-out infinite;
+            position: relative;
+            z-index: 1;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .brand-logo-img:hover {
+            transform: scale(1.08) rotate(2deg);
+        }
+
+        .brand-title {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-subtitle {
+            margin-top: 3px;
+            font-size: 0.73rem;
+            color: var(--text-muted);
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+        }
+
+        .brand-copy {
+            min-width: 0;
+        }
+
+        .badge-enterprise {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--card-bg);
+            border: 1px solid var(--panel-border);
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 0.73rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            transition: border-color 0.25s ease, background 0.25s ease, transform 0.25s ease;
+        }
+
+        .badge-enterprise:hover {
+            border-color: var(--panel-border-hover);
+            background: var(--hover-bg);
+            transform: translateY(-1px);
+        }
+
+        .workspace-statuses {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            flex: 1;
+            margin: 0 16px;
+            padding: 5px 16px;
+            border-inline: 1px solid var(--panel-border);
+        }
+
+        .workspace-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 28px;
+            padding: 5px 10px;
+            border: 1px solid var(--panel-border);
+            border-radius: 7px;
+            background: var(--card-bg);
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 500;
+            transition: border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .workspace-status:hover {
+            border-color: var(--panel-border-hover);
+            transform: translateY(-1px);
+        }
+
+        .workspace-status.is-online {
+            border-color: rgba(0, 230, 153, 0.35);
+            color: var(--emerald-accent);
+        }
+
+        .workspace-status.is-models {
+            max-width: 210px;
+        }
+
+        .workspace-status.is-models strong {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .workspace-status strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .workspace-status-icon {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--text-dim);
+        }
+
+        .workspace-status-icon.online {
+            background: var(--emerald-accent);
+            box-shadow: 0 0 8px rgba(0, 230, 153, 0.8);
+            animation: status-beacon 2s infinite ease-in-out;
+        }
+
+        .workspace-status-icon.offline {
+            background: #f59e0b;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--emerald-accent);
+            box-shadow: 0 0 8px var(--emerald-accent);
+            animation: status-beacon 2s infinite ease-in-out;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 0 0 auto;
+        }
+
+        .header-menu {
+            position: relative;
+        }
+
+        .header-menu summary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border: 1px solid transparent;
+            border-radius: 7px;
+            color: var(--text-muted);
+            cursor: pointer;
+            list-style: none;
+            transition: all 0.2s ease;
+        }
+
+        .header-menu summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .header-menu summary:hover,
+        .header-menu[open] summary {
+            border-color: var(--panel-border-hover);
+            color: var(--text-primary);
+            background: var(--hover-bg);
+            transform: scale(1.05);
+        }
+
+        .header-menu summary svg,
+        #composer-settings-button svg {
+            width: 17px;
+            height: 17px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .header-menu summary:hover svg,
+        .header-menu[open] summary svg,
+        #composer-settings-button:hover svg {
+            transform: rotate(60deg);
+        }
+
+        .header-menu-panel {
+            position: absolute;
+            top: 38px;
+            right: 0;
+            z-index: 12;
+            width: 184px;
+            padding: 8px;
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            background: var(--card-bg);
+            box-shadow: 0 16px 34px rgba(0, 0, 0, 0.7);
+            animation: menu-slide-down 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .header-menu-heading {
+            display: block;
+            padding: 4px 6px 7px;
+            color: var(--text-dim);
+            font-size: 0.67rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .header-menu-action {
+            width: 100%;
+            padding: 8px;
+            border: 0;
+            border-radius: 5px;
+            color: var(--text-muted);
+            background: transparent;
+            font: inherit;
+            font-size: 0.74rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+
+        .header-menu-action:hover {
+            color: var(--text-primary);
+            background: var(--hover-bg);
+            transform: translateX(3px);
+        }
+
+        .header-user-status {
+            display: block;
+            padding: 7px 8px;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            line-height: 1.45;
+        }
+
+        @keyframes status-beacon {
+            0%, 100% { transform: scale(0.9); box-shadow: 0 0 4px var(--emerald-accent); opacity: 0.8; }
+            50% { transform: scale(1.3); box-shadow: 0 0 12px var(--emerald-accent), 0 0 20px var(--emerald-accent); opacity: 1; }
+        }
+
+        @keyframes emblem-glow {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 16px rgba(0, 230, 153, 0.35), 0 0 35px rgba(0, 230, 153, 0.15); }
+            50% { transform: scale(1.04); box-shadow: 0 0 28px rgba(0, 230, 153, 0.65), 0 0 50px rgba(0, 230, 153, 0.3); }
+        }
+
+        @keyframes menu-slide-down {
+            from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes surface-enter {
+            from { opacity: 0; transform: translateY(12px) scale(0.99); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Main Workspace Container */
+        .chat-container {
+            width: 100%;
+            min-width: 0;
+            flex: 1;
+            margin: 0;
+            background: var(--surface-main);
+            border: 1px solid var(--panel-border);
+            border-radius: 24px;
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            animation: surface-enter 0.5s ease-out 0.12s both;
+        }
+
+        .workspace-layout {
+            width: 100%;
+            max-width: 1180px;
+            flex: 1;
+            min-height: 0;
+            margin: 16px 0;
+            display: grid;
+            grid-template-columns: 250px minmax(0, 1fr);
+            gap: 16px;
+        }
+
+        .knowledge-base-panel {
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            animation: surface-enter 0.45s ease-out 0.08s both;
+            overflow-x: hidden;
+        }
+
+        .knowledge-base-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: var(--text-primary);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.9rem;
+        }
+
+        .knowledge-base-heading svg {
+            width: 18px;
+            height: 18px;
+            margin-right: 8px;
+            stroke: var(--text-muted);
+            fill: none;
+            stroke-width: 2;
+        }
+
+        .knowledge-base-title {
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .knowledge-base-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 10px;
+            margin: 14px 0 12px;
+            color: var(--text-dim);
+            font-size: 0.68rem;
+        }
+
+        .knowledge-base-summary strong {
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .knowledge-base-statistics {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .knowledge-statistic {
+            min-height: 68px;
+            padding: 12px;
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            background: var(--card-bg);
+        }
+
+        .knowledge-statistic-value {
+            display: block;
+            color: var(--text-primary);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 1.08rem;
+            font-weight: 700;
+        }
+
+        .knowledge-statistic-label {
+            display: block;
+            margin-top: 3px;
+            color: var(--text-dim);
+            font-size: 0.68rem;
+        }
+
+        .knowledge-base-actions {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .knowledge-base-refresh {
+            width: 28px;
+            height: 28px;
+            border: 0;
+            border-radius: 6px;
+            color: var(--text-muted);
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .knowledge-base-refresh:hover {
+            color: var(--text-primary);
+            background: var(--hover-bg);
+        }
+
+        .knowledge-base-close,
+        .mobile-knowledge-toggle {
+            display: none;
+        }
+
+        .knowledge-base-list {
+            flex: 1;
+            min-height: 84px;
+            margin: 14px 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-right: 4px;
+            box-sizing: border-box;
+            width: 100%;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.04) transparent;
+        }
+
+        .knowledge-base-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .knowledge-base-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .knowledge-base-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+        }
+
+        .knowledge-base-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .knowledge-document {
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px;
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            color: var(--text-muted);
+            background: var(--card-bg);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            font-size: 0.78rem;
+            line-height: 1.35;
+            width: 100%;
+            box-sizing: border-box;
+            overflow: visible;
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .knowledge-document:hover {
+            z-index: 2;
+            transform: translateY(-2px);
+            background: var(--hover-bg);
+            border-color: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .knowledge-document:hover .knowledge-document-title {
+            color: var(--text-primary);
+        }
+
+        .hero-upload-box {
+            flex: 1;
+            min-height: 380px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed var(--panel-border);
+            border-radius: 20px;
+            padding: 48px 32px;
+            text-align: center;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.02);
+            transition: all 0.2s ease;
+        }
+
+        .hero-upload-box:hover {
+            border-color: var(--emerald-accent);
+            box-shadow: 0 0 15px rgba(0, 230, 153, 0.15);
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-4px);
+        }
+
+        .hero-upload-box.dragover {
+            border-color: var(--emerald-accent);
+            background: rgba(0, 230, 153, 0.1);
+            transform: scale(1.02);
+        }
+
+        .knowledge-document-icon {
+            width: 16px;
+            height: 16px;
+            flex: 0 0 16px;
+            margin-top: 2px;
+            color: var(--text-muted);
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+        }
+
+        .knowledge-document-content {
+            min-width: 0;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .knowledge-document-title {
+            display: block;
+            color: var(--text-primary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+
+        .knowledge-document-meta {
+            display: block;
+            margin-top: 3px;
+            color: var(--text-dim);
+            font-size: 0.7rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .knowledge-document-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 8px;
+            color: var(--emerald-accent);
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+
+        .knowledge-document-status::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--emerald-accent);
+            box-shadow: 0 0 6px var(--emerald-accent);
+        }
+
+        .knowledge-document-rating {
+            display: block;
+            margin-top: 4px;
+            color: #fbbf24;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            line-height: 1;
+            text-shadow: 0 0 8px rgba(251, 191, 36, 0.2);
+        }
+
+        .knowledge-document-menu {
+            position: relative;
+            flex: 0 0 auto;
+            margin-top: -2px;
+            margin-right: -4px;
+        }
+
+        .knowledge-document-menu summary {
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            color: var(--text-dim);
+            cursor: pointer;
+            list-style: none;
+            transition: color 0.15s ease, background 0.15s ease;
+        }
+
+        .knowledge-document-menu summary svg {
+            width: 15px;
+            height: 15px;
+            fill: currentColor;
+        }
+
+        .knowledge-document-menu summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .knowledge-document-menu summary:hover {
+            color: var(--text-primary);
+            background: var(--hover-bg);
+        }
+
+        .knowledge-document-menu-options {
+            position: absolute;
+            top: 26px;
+            right: 0;
+            z-index: 10;
+            width: 140px;
+            padding: 4px;
+            border: 1px solid var(--panel-border);
+            border-radius: 7px;
+            background: var(--card-bg);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.6);
+        }
+
+        .knowledge-document-menu-options button {
+            width: 100%;
+            padding: 7px 8px;
+            border: 0;
+            border-radius: 4px;
+            color: var(--text-muted);
+            background: transparent;
+            font: inherit;
+            font-size: 0.7rem;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .knowledge-document-menu-options button:hover {
+            color: var(--text-primary);
+            background: var(--hover-bg);
+        }
+
+        .knowledge-base-empty {
+            padding: 10px 0;
+            color: var(--text-dim);
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+
+        .knowledge-upload-button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            background: var(--card-bg);
+            font: inherit;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .knowledge-upload-button:hover {
+            background: var(--hover-bg);
+            border-color: var(--panel-border-hover);
+        }
+
+        .knowledge-base-status {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-top: 12px;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        .knowledge-base-status::before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--success-green);
+            box-shadow: 0 0 8px var(--success-green);
+        }
+
+        /* Scrollable Feed */
+        .message-feed {
+            flex: 1;
+            overflow-y: auto;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+            scroll-behavior: smooth;
+        }
+
+        .welcome-state {
+            width: 100%;
+            min-height: 100%;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .welcome-card {
+            width: min(100%, 430px);
+            padding: 30px;
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
+            background: var(--card-bg);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            animation: surface-enter 0.5s ease-out 0.2s both;
+            text-align: center;
+            margin: auto;
+        }
+
+        .welcome-card-header {
+            display: block;
+        }
+
+        .welcome-card-avatar {
+            width: 62px;
+            height: 62px;
+            padding: 4px;
+            border: 1px solid var(--panel-border);
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 0 0 16px rgba(0, 0, 0, 0.5);
+        }
+
+        .welcome-card h2 {
+            margin-top: 13px;
+            color: var(--text-primary);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .welcome-card p {
+            margin-top: 8px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+
+        .welcome-upload-button {
+            width: 100%;
+            margin-top: 22px;
+            padding: 12px;
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            background: var(--hover-bg);
+            font: inherit;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .welcome-upload-button:hover {
+            transform: translateY(-1px);
+            background: var(--panel-border-hover);
+            border-color: var(--active-border);
+        }
+
+        .welcome-section {
+            margin-top: 22px;
+            padding-top: 20px;
+            border-top: 1px solid var(--panel-border);
+            text-align: left;
+        }
+
+        .welcome-section-heading {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.74rem;
+            font-weight: 700;
+        }
+
+        .welcome-recent-documents {
+            display: grid;
+            gap: 7px;
+            margin: 12px 0 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .welcome-recent-document {
+            overflow: hidden;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .welcome-recent-document::before {
+            content: 'PDF';
+            display: inline-block;
+            margin-right: 7px;
+            padding: 2px 4px;
+            border: 1px solid var(--panel-border);
+            border-radius: 3px;
+            color: var(--text-muted);
+            font-size: 0.57rem;
+            font-weight: 700;
+            vertical-align: 1px;
+        }
+
+        .welcome-statistics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .welcome-statistic-value,
+        .welcome-statistic-label {
+            display: block;
+        }
+
+        .welcome-statistic-value {
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .welcome-statistic-label {
+            margin-top: 3px;
+            color: var(--text-dim);
+            font-size: 0.75rem;
+        }
+
+        .message-feed::-webkit-scrollbar {
+            width: 5px;
+        }
+        .message-feed::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .message-feed::-webkit-scrollbar-thumb {
+            background: var(--panel-border);
+            border-radius: 10px;
+        }
+
+        /* Message Rows */
+        .msg-row {
+            display: flex;
+            width: 100%;
+            animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg-user {
+            justify-content: flex-end;
+        }
+
+        .msg-user .msg-bubble {
+            background: #1e1e1e;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            border-radius: 18px 18px 4px 18px;
+            max-width: 82%;
+            padding: 14px 20px;
+            font-size: 0.93rem;
+            line-height: 1.6;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+        }
+
+        .msg-ai {
+            justify-content: flex-start;
+            gap: 14px;
+            align-items: flex-start;
+        }
+
+        .msg-ai-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            object-fit: cover;
+            flex-shrink: 0;
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            margin-top: 2px;
+        }
+
+        .msg-ai .msg-bubble {
+            background: #121212;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+            border-radius: 20px 20px 20px 4px;
+            max-width: 88%;
+            padding: 20px 24px;
+            font-size: 0.93rem;
+            line-height: 1.75;
+            box-shadow: 0 10px 32px rgba(0, 0, 0, 0.6);
+            position: relative;
+        }
+
+        /* Document Intelligence Layer / Retrieved Knowledge Card */
+        .knowledge-retrieval-card {
+            margin-top: 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            overflow: hidden;
+            font-size: 0.85rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .knowledge-retrieval-card:hover {
+            border-color: var(--panel-border-hover);
+        }
+
+        .retrieval-header {
+            padding: 10px 16px;
+            background: var(--panel-bg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        .retrieval-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .retrieval-title svg {
+            width: 16px;
+            height: 16px;
+            stroke: var(--text-muted);
+            fill: none;
+            stroke-width: 2;
+        }
+
+        .confidence-badge {
+            background: var(--hover-bg);
+            border: 1px solid var(--panel-border);
+            color: var(--text-dim);
+            font-size: 0.72rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .retrieval-body {
+            padding: 14px 16px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            font-size: 0.83rem;
+            background: var(--input-bg);
+        }
+
+        .analysis-summary {
+            margin-top: 16px;
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            background: var(--card-bg);
+            overflow: hidden;
+            font-size: 0.83rem;
+        }
+
+        .analysis-summary summary {
+            padding: 10px 16px;
+            color: var(--text-primary);
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .analysis-summary-body {
+            padding: 0 16px 14px;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .analysis-summary ul {
+            margin: 8px 0 0 18px;
+        }
+
+        /* Response Waiting Indicator */
+        .thinking-enterprise-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 13px 16px;
+            width: fit-content;
+            max-width: 100%;
+        }
+
+        .thinking-label {
+            color: var(--text-muted);
+            font-size: 0.84rem;
+            font-weight: 500;
+        }
+
+        .thinking-dots {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .thinking-dots span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--emerald-accent);
+            animation: thinking-dot 1.1s infinite ease-in-out;
+        }
+
+        .thinking-dots span:nth-child(2) {
+            animation-delay: 0.16s;
+        }
+
+        .thinking-dots span:nth-child(3) {
+            animation-delay: 0.32s;
+        }
+
+        @keyframes thinking-dot {
+            0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
+            30% { opacity: 1; transform: translateY(-3px); }
+        }
+
+        /* Bottom Command Dock */
+        .bottom-dock {
+            width: 100%;
+            max-width: 880px;
+            margin-left: 266px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            animation: surface-enter 0.5s ease-out 0.18s both;
+        }
+
+        /* Command Shortcut Chips */
+        .suggestions-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .chip-enterprise {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--panel-border);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+        }
+
+        .chip-enterprise svg {
+            width: 14px;
+            height: 14px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+            opacity: 0.85;
+        }
+
+        .chip-enterprise:hover:not(:disabled) {
+            background: rgba(0, 230, 153, 0.05);
+            border-color: var(--emerald-accent);
+            color: var(--text-primary);
+            box-shadow: 0 0 12px rgba(0, 230, 153, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .chip-enterprise:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            filter: grayscale(100%);
+        }
+
+        /* Luxury Command Input Bar */
+        .composer-shell {
+            width: 100%;
+        }
+
+        .composer-modes {
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px;
+            margin: 0 8px 8px;
+        }
+
+        .composer-mode {
+            min-height: 28px;
+            padding: 5px 10px;
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            color: var(--text-dim);
+            background: var(--card-bg);
+            font: inherit;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, color 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .composer-mode:hover {
+            color: var(--text-primary);
+            border-color: var(--panel-border-hover);
+            background: var(--hover-bg);
+            transform: translateY(-1px);
+        }
+
+        .composer-mode.is-active {
+            border-color: var(--emerald-accent);
+            color: var(--emerald-accent);
+            background: rgba(0, 230, 153, 0.12);
+            box-shadow: 0 0 12px rgba(0, 230, 153, 0.2);
+        }
+
+        .composer-modes.is-collapsed {
+            display: none;
+        }
+
+        .input-icon-btn.is-active {
+            color: var(--emerald-accent);
+            background: var(--hover-bg);
+            box-shadow: inset 0 0 0 1px var(--emerald-accent);
+        }
+
+        .input-wrapper {
+            width: 100%;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s ease, transform 0.2s ease;
+            border-radius: 8px;
+        }
+
+        .input-icon-btn:hover {
+            color: var(--text-primary);
+            background: var(--hover-bg);
+            transform: scale(1.1);
+        }
+
+        .input-icon-btn.is-listening {
+            color: #ffffff;
+            background: rgba(239, 68, 68, 0.18);
+            box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.5);
+            animation: microphone-pulse 1.2s infinite alternate ease-in-out;
+        }
+
+        @keyframes microphone-pulse {
+            from { box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.35); }
+            to { box-shadow: 0 0 0 5px rgba(239, 68, 68, 0); }
+        }
+
+        .input-icon-btn svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+        }
+
+        .input-model-indicator {
+            display: flex;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: var(--hover-bg);
+            padding: 4px 10px;
+            border-radius: 12px;
+            margin-left: 8px;
+            cursor: pointer;
+            border: 1px solid var(--panel-border);
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .input-model-indicator:hover {
+            color: var(--text-primary);
+            border-color: var(--panel-border-hover);
+        }
+
+        .input-status-line {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-top: 10px;
+            font-weight: 500;
+        }
+        .input-status-line span {
+            color: var(--text-muted);
+        }
+
+        .input-bar {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 20px;
+            padding: 16px 174px 16px 135px;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            outline: none;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            font-family: inherit;
+            transition: all 0.25s ease;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+        }
+
+        .input-bar::placeholder {
+            color: var(--text-dim);
+            font-weight: 400;
+        }
+
+        .input-bar:focus {
+            background: var(--card-bg);
+            animation: input-aura-pulse 2.5s ease-in-out infinite;
+        }
+
+        @keyframes input-aura-pulse {
+            0%, 100% { border-color: var(--panel-border); box-shadow: 0 0 0 1px var(--panel-border), 0 8px 24px rgba(0, 0, 0, 0.1); }
+            50% { border-color: var(--panel-border-hover); box-shadow: 0 0 0 2px var(--panel-border-hover), 0 8px 32px rgba(0, 0, 0, 0.2); }
+        }
+
+        .input-left-action {
+            position: absolute;
+            left: 12px;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-actions {
+            position: absolute;
+            right: 12px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .shortcut-badge {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            background: var(--card-bg);
+            border: 1px solid var(--panel-border);
+            padding: 3px 8px;
+            border-radius: 6px;
+            pointer-events: none;
+            font-family: 'Inter', monospace;
+        }
+
+        .btn-send-glow {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #00E699, #00B377);
+            color: #060911;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.25s ease, box-shadow 0.25s ease;
+            animation: send-btn-pulse 3s infinite ease-in-out;
+        }
+
+        @keyframes send-btn-pulse {
+            0%, 100% { box-shadow: 0 4px 18px rgba(0, 230, 153, 0.35); }
+            50% { box-shadow: 0 6px 28px rgba(0, 230, 153, 0.65), 0 0 15px rgba(0, 230, 153, 0.4); }
+        }
+
+        .btn-send-glow svg {
+            stroke: #060911;
+        }
+
+        .btn-send-glow:hover {
+            transform: translateY(-2px) scale(1.08);
+            background: linear-gradient(135deg, #00F5A0, #00E699);
+            box-shadow: 0 8px 30px rgba(0, 230, 153, 0.8), 0 0 20px rgba(0, 230, 153, 0.5);
+        }
+
+        .btn-send-glow:active {
+            transform: scale(0.94);
+        }
+
+        .btn-send-glow:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-send-glow svg {
+            width: 17px;
+            height: 17px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2.2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+            }
+        }        @media (max-width: 1140px) {
+            .bottom-dock {
+                margin-left: 0;
+                max-width: 100%;
+            }
+            .workspace-statuses {
+                margin: 0 8px;
+                padding: 4px 8px;
+            }
+            .workspace-status.is-models,
+            .workspace-status:nth-child(4) {
+                display: none;
+            }
+            .suggestions-row {
+                flex-wrap: nowrap;
+                justify-content: flex-start;
+                overflow-x: auto;
+                padding: 2px 2px 5px;
+                scrollbar-width: none;
+            }
+            .suggestions-row::-webkit-scrollbar {
+                display: none;
+            }
+            .chip-enterprise {
+                flex: 0 0 auto;
+            }
+        }
+
+        @media (max-width: 960px) {
+            .app-viewport {
+                padding: 14px 12px 12px;
+            }
+            .header-brand {
+                gap: 8px;
+            }
+            .workspace-header {
+                gap: 8px;
+                padding: 7px 8px;
+            }
+            .logo-emblem {
+                width: 36px;
+                height: 36px;
+            }
+            .brand-title {
+                font-size: 0.95rem;
+            }
+            .brand-subtitle {
+                font-size: 0.72rem;
+            }
+            .workspace-statuses {
+                display: none;
+            }
+            .mobile-knowledge-toggle {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 36px;
+                height: 32px;
+                flex: 0 0 auto;
+                border: 1px solid var(--panel-border);
+                border-radius: 8px;
+                color: var(--accent-cyan);
+                background: rgba(12, 18, 30, 0.8);
+                backdrop-filter: blur(16px);
+                cursor: pointer;
+            }
+            .mobile-knowledge-toggle svg {
+                width: 17px;
+                height: 17px;
+                fill: none;
+                stroke: currentColor;
+                stroke-width: 2;
+            }
+            .chat-container {
+                margin: 8px 0;
+                border-radius: 18px;
+            }
+            .workspace-layout {
+                grid-template-columns: 1fr;
+                margin: 8px 0;
+            }
+            .knowledge-base-panel {
+                display: flex;
+                position: fixed;
+                top: 0;
+                right: 0;
+                z-index: 40;
+                width: min(340px, 92vw);
+                height: 100dvh;
+                padding: 18px;
+                border-radius: 0;
+                background: rgba(10, 16, 28, 0.98);
+                box-shadow: -20px 0 48px rgba(0, 0, 0, 0.5);
+                animation: none;
+                transform: translateX(100%);
+                pointer-events: none;
+                transition: transform 0.25s ease;
+            }
+            .knowledge-base-panel.is-open {
+                transform: translateX(0);
+                pointer-events: auto;
+            }
+            .knowledge-base-close {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 28px;
+                height: 28px;
+                border: 0;
+                border-radius: 6px;
+                color: var(--text-muted);
+                background: transparent;
+                font-size: 1.35rem;
+                cursor: pointer;
+            }
+            .bottom-dock {
+                margin-left: 0;
+                gap: 8px;
+                max-width: 100%;
+            }
+            .suggestions-row {
+                flex-wrap: nowrap;
+                justify-content: flex-start;
+                overflow-x: auto;
+                padding: 2px 2px 5px;
+                scrollbar-width: none;
+            }
+            .suggestions-row::-webkit-scrollbar {
+                display: none;
+            }
+            .chip-enterprise {
+                flex: 0 0 auto;
+                padding: 7px 12px;
+                font-size: 0.74rem;
+            }
+            .message-feed {
+                padding: 16px;
+                gap: 16px;
+            }
+            .welcome-state {
+                padding: 12px 0;
+            }
+            .welcome-card {
+                padding: 22px;
+            }
+            .welcome-examples {
+                grid-template-columns: 1fr;
+            }
+            .welcome-example-button {
+                min-height: 42px;
+            }
+            .shortcut-badge {
+                display: none;
+            }
+            .input-bar {
+                padding: 14px 148px 14px 115px;
+                font-size: 0.88rem;
+                border-radius: 16px;
+            }
+            .composer-modes {
+                justify-content: flex-start;
+                overflow-x: auto;
+                margin-inline: 0;
+                padding-bottom: 2px;
+                scrollbar-width: none;
+            }
+            .composer-modes::-webkit-scrollbar {
+                display: none;
+            }
+            .composer-mode {
+                flex: 0 0 auto;
+            }
+            .btn-send-glow {
+                width: 34px;
+                height: 34px;
+            }
+            .workspace-statuses {
+                gap: 6px;
+            }
+            .workspace-status {
+                font-size: 0.68rem;
+                padding: 4px 8px;
+            }
+            .msg-ai {
+                gap: 10px;
+            }
+            .msg-ai-avatar {
+                width: 32px;
+                height: 32px;
+            }
+            .msg-ai .msg-bubble,
+            .msg-user .msg-bubble {
+                max-width: calc(100% - 42px);
+                padding: 15px 16px;
+                font-size: 0.88rem;
+            }
+        }
+        .settings-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .settings-btn:hover {
+            background: var(--hover-bg);
+            color: var(--text-primary);
+        }
+        .settings-btn svg {
+            width: 20px;
+            height: 20px;
+            transition: transform 0.3s;
+        }
+        .settings-btn:hover svg {
+            transform: rotate(60deg);
+        }
+
+        .settings-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(2px);
+            z-index: 9998;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .settings-overlay.is-active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .settings-drawer {
+            position: fixed;
+            top: 0; right: 0; bottom: 0;
+            width: 380px;
+            background: var(--panel-bg);
+            border-left: 1px solid var(--panel-border);
+            z-index: 9999;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+        }
+        .settings-drawer.is-open {
+            transform: translateX(0);
+        }
+        .settings-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .settings-header h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+        .settings-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .settings-close:hover {
+            background: var(--hover-bg);
+            color: var(--text-primary);
+        }
+        .settings-content {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .settings-section {
+            margin-bottom: 32px;
+        }
+        .settings-section h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        .setting-item {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .setting-item.vertical {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .setting-progress-wrapper {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .progress-bar-bg {
+            width: 100%;
+            height: 6px;
+            background: var(--panel-border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--emerald-accent);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        .setting-item label {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        .setting-item.vertical label {
+            margin-bottom: 12px;
+        }
+        .setting-control {
+            width: 150px;
+        }
+        .setting-item.vertical .setting-control {
+            width: 100%;
+        }
+        .setting-control select, .setting-control input {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--panel-border);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+        .setting-control select:focus, .setting-control input:focus {
+            border-color: var(--accent-color);
+        }
+        .setting-description {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Canvas -->
+    <canvas id="space-canvas"></canvas>
+    
+    <!-- Ambient Light Halo -->
+    <div class="ambient-glow"></div>
+
+    <div class="app-viewport">
+        <!-- Header -->
+        <header class="workspace-header">
+            <div class="header-brand">
+                <div class="logo-emblem">
+                    <img src="logo.jpg" class="brand-logo-img" alt="Local AI Logo">
+                </div>
+                <div class="brand-copy">
+                    <h1 class="brand-title">Local-RAG</h1>
+                    <div class="brand-subtitle"><span>Private AI Knowledge Engine</span></div>
+                </div>
+            </div>
+            <div class="workspace-statuses" aria-label="Sistem durumu">
+                <span class="workspace-status is-online"><span class="workspace-status-icon" id="model-status-icon"></span><strong id="model-status">Online</strong></span>
+                <span class="workspace-status">CPU <strong id="header-cpu-usage">-</strong> &nbsp;&middot;&nbsp; RAM <strong id="header-memory-usage">-</strong></span>
+                <span class="workspace-status"><strong>Local Embedding</strong></span>
+                <span class="workspace-status is-models"><strong id="header-models">-</strong> &middot; Local</span>
+            </div>
+            <div class="header-actions">
+                <button class="mobile-knowledge-toggle" id="mobile-knowledge-toggle" type="button" title="Bilgi tabanını aç" aria-label="Bilgi tabanını aç">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+                </button>
+                <button class="settings-btn" id="open-settings-drawer" title="Ayarlar" aria-label="Ayarlar">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </button>
+                <details class="header-menu">
+                    <summary title="User" aria-label="User"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg></summary>
+                    <div class="header-menu-panel">
+                        <span class="header-menu-heading">User</span>
+                        <span class="header-user-status">Yerel kullanıcı<br>Veriler bu cihazda kalır.</span>
+                    </div>
+                </details>
+            </div>
+        </header>
+
+        <div class="workspace-layout">
+            <aside class="knowledge-base-panel" aria-label="Bilgi tabanı">
+                <div class="knowledge-base-heading">
+                    <span class="knowledge-base-title">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+                        Bilgi Tabanı
+                    </span>
+                    <span class="knowledge-base-actions">
+                        <button class="knowledge-base-refresh" title="Belge listesini yenile" onclick="loadKnowledgeBase()">↻</button>
+                        <button class="knowledge-base-close" id="knowledge-base-close" type="button" title="Bilgi tabanını kapat" aria-label="Bilgi tabanını kapat" onclick="closeKnowledgeBase()">×</button>
+                    </span>
+                </div>
+                <div class="knowledge-base-summary" aria-label="Bilgi tabanı özeti">
+                    <span><strong id="knowledge-document-count">-</strong> Belge</span>
+                    <span><strong id="knowledge-chunk-count">-</strong> Parça</span>
+                    <span><strong id="knowledge-size-count">-</strong></span>
+                </div>
+                <div class="knowledge-base-statistics" aria-label="Bilgi tabanı istatistikleri">
+                    <div class="knowledge-statistic"><span class="knowledge-statistic-value" id="knowledge-docs-stat">-</span><span class="knowledge-statistic-label">Belge</span></div>
+                    <div class="knowledge-statistic"><span class="knowledge-statistic-value" id="knowledge-vectors-stat">-</span><span class="knowledge-statistic-label">Vektör</span></div>
+                </div>
+                <div class="knowledge-base-list" id="knowledge-base-list" aria-live="polite"></div>
+                <button class="knowledge-upload-button" id="knowledge-upload-button" type="button">Belge Ekle</button>
+                <input id="document-upload-input" type="file" accept=".pdf,.md,application/pdf,text/markdown" hidden>
+                <div class="knowledge-base-status" id="knowledge-base-status">İndeks denetleniyor...</div>
+            </aside>
+
+            <!-- Main Workspace Chat Feed -->
+            <div class="chat-container">
+                <div class="message-feed" id="message-feed">
+                    <section class="welcome-state" aria-labelledby="welcome-title">
+                        <!-- 2-Column Welcome Container -->
+                        <div style="display: flex; gap: 80px; max-width: 1280px; width: 90%; margin: auto; align-items: stretch; flex-wrap: wrap;">
+                            
+                            <!-- Left Column: Content & Stats -->
+                            <div style="flex: 1; min-width: 320px; display: flex; flex-direction: column; justify-content: center; animation: surface-enter 0.5s ease-out 0.1s both;">
+                                <!-- Header Section -->
+                                <div class="welcome-header" style="text-align: left; margin-bottom: 8px;">
+                                    <h2 id="welcome-title" style="font-size: 2.2rem; font-weight: 800; color: var(--text-primary); margin-bottom: 12px; line-height: 1.2; white-space: nowrap;">Belgelerinize Sorun</h2>
+                                    <p style="color: var(--text-muted); font-size: 1.15rem; margin-top: 0; line-height: 1.6;">Yapay zeka ile belgelerinizi analiz edin, özetleyin ve hızlıca içgörüler elde edin.</p>
+                                </div>
+                                
+                                <!-- Recent Documents -->
+                                <section class="welcome-section" aria-labelledby="recent-documents-title" style="text-align: left; margin-bottom: 32px;">
+                                    <span class="welcome-section-heading" id="recent-documents-title" style="font-size: 0.95rem; font-weight: 600;">Son Kullanılanlar</span>
+                                    <ul class="welcome-recent-documents" id="welcome-recent-documents" style="margin-top: 12px;">
+                                        <li class="welcome-recent-document">Belgeler yükleniyor...</li>
+                                    </ul>
+                                </section>
+                                
+                                <!-- Statistics -->
+                                <section class="welcome-section" aria-labelledby="today-statistics-title" style="text-align: left;">
+                                    <span class="welcome-section-heading" id="today-statistics-title" style="font-size: 0.95rem; font-weight: 600;">Bugünkü İstatistik</span>
+                                    <div class="welcome-statistics" style="margin-top: 16px; display: flex; gap: 48px; background: transparent; padding: 0; border: none; justify-content: flex-start;">
+                                        <div style="display: flex; flex-direction: column; align-items: flex-start;"><span class="welcome-statistic-value" id="today-question-count">0</span><span class="welcome-statistic-label">Soru</span></div>
+                                        <div style="display: flex; flex-direction: column; align-items: flex-start;"><span class="welcome-statistic-value" id="welcome-document-count">-</span><span class="welcome-statistic-label">Belge</span></div>
+                                        <div style="display: flex; flex-direction: column; align-items: flex-start;"><span class="welcome-statistic-value" id="welcome-vector-count">-</span><span class="welcome-statistic-label">Vektör</span></div>
+                                    </div>
+                                </section>
+                            </div>
+
+                            <!-- Right Column: Hero Upload Box -->
+                            <div style="flex: 1.1; min-width: 320px; display: flex; flex-direction: column; animation: surface-enter 0.5s ease-out 0.2s both;">
+                                <div id="welcome-upload-button" class="hero-upload-box">
+                                    <svg style="width: 72px; height: 72px; margin-bottom: 24px; color: var(--emerald-accent); opacity: 0.9;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="17 8 12 3 7 8"></polyline>
+                                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                                    </svg>
+                                    <h3 style="font-size: 1.4rem; color: var(--text-primary); margin: 0 0 12px 0; font-weight: 600;">Dosyayı buraya sürükleyin<br>veya seçin</h3>
+                                    <p style="font-size: 1rem; color: var(--text-muted); margin: 0;">PDF &bull; DOCX &bull; TXT gibi desteklenen formatlar</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Command Bar -->
+        <div class="bottom-dock">
+            <!-- Command Shortcuts -->
+            <div class="suggestions-row">
+                <button class="chip-enterprise quick-action-btn" disabled onclick="sendQuickPrompt('Yüklenen belgelerin detaylı Türkçe özetini çıkar.')">
+                    Belgeyi Özetle
+                </button>
+                <button class="chip-enterprise quick-action-btn" disabled onclick="sendQuickPrompt('Belgelerdeki en önemli bilgileri ve kuralları bul.')">
+                    Bilgi Bul
+                </button>
+                <button class="chip-enterprise quick-action-btn" disabled onclick="sendQuickPrompt('Bu belgedeki ana noktaları ve temel amacı listele.')">
+                    Önemli Noktaları Çıkar
+                </button>
+                <button class="chip-enterprise quick-action-btn" disabled onclick="sendQuickPrompt('Yüklenen belgeler arasındaki ortak noktaları ve farkları karşılaştır.')">
+                    Belgeleri Karşılaştır
+                </button>
+            </div>
+
+            <!-- Input Bar -->
+            <div class="composer-shell">
+                <div class="composer-modes" aria-label="Yanıt modları">
+                    <button class="composer-mode" type="button" data-chat-option="deepSearch" aria-pressed="false">Deep Search</button>
+                    <button class="composer-mode" type="button" data-chat-option="reasoning" aria-pressed="false">Reason</button>
+                    <button class="composer-mode is-active" type="button" data-chat-option="fast" aria-pressed="true">Fast</button>
+                </div>
+                <div class="input-wrapper">
+                    <div class="input-left-action">
+                        <button class="input-icon-btn" id="attach-document-button" type="button" title="Belge yükle">
+                            <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+                        </button>
+                        <div class="input-model-indicator" title="Model Seçimi">
+                            <span id="input-model-name">Llama 3 &middot; Local</span>
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-left:2px"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                    </div>
+                    <input type="text" id="user-input" class="input-bar" placeholder="Belgeleriniz hakkında bir şey sorun..." onkeypress="handleKeyPress(event)" autocomplete="off">
+                    <div class="input-actions">
+                        <button class="input-icon-btn" id="composer-settings-button" type="button" title="Yanıt ayarları">
+                            <svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        </button>
+                        <button class="input-icon-btn" id="deep-search-button" type="button" title="Derin aramayı aç veya kapat">
+                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><line x1="3" y1="12" x2="21" y2="12"></line><path d="M12 3a14 14 0 0 1 0 18"></path><path d="M12 3a14 14 0 0 0 0 18"></path></svg>
+                        </button>
+                        <button class="input-icon-btn" id="voice-input-button" type="button" title="Sesle yaz">
+                            <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                        </button>
+                        <button class="btn-send-glow" id="send-btn" onclick="sendMessage()" title="Mesaj gönder">
+                            <svg viewBox="0 0 24 24">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="input-status-line">
+                    <span id="chat-status-mode">Fast</span> &middot; <span id="chat-status-vectors">2.3K vektör</span> &middot; <span class="status-local-ai" id="chat-status-model">Local AI</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Starfield & Cosmic Particle Animation -->
+    <script>
+        const canvas = document.getElementById('space-canvas');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+        let shootingStars = [];
+        const numStars = 120;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initStars();
+        }
+
+        function initStars() {
+            stars = [];
+            for (let i = 0; i < numStars; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 1.3 + 0.3,
+                    alpha: Math.random() * 0.5 + 0.25,
+                    speed: Math.random() * 0.12 + 0.03
+                });
+            }
+        }
+
+        function spawnShootingStar() {
+            if (Math.random() < 0.015 && shootingStars.length < 2) {
+                shootingStars.push({
+                    x: Math.random() * canvas.width * 0.8,
+                    y: Math.random() * canvas.height * 0.4,
+                    length: Math.random() * 80 + 40,
+                    speed: Math.random() * 8 + 4,
+                    angle: Math.PI / 4 + (Math.random() * 0.2 - 0.1),
+                    opacity: 1,
+                    decay: Math.random() * 0.02 + 0.01
+                });
+            }
+        }
+
+        function animateStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+
+            // Draw steady stars (no twinkling/flickering)
+            stars.forEach(star => {
+                star.y -= star.speed;
+                if (star.y < 0) star.y = canvas.height;
+
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                ctx.fillStyle = isLight ? `rgba(0, 0, 0, ${star.alpha})` : `rgba(235, 242, 255, ${star.alpha})`;
+                ctx.shadowBlur = 0;
+                ctx.fill();
+            });
+
+            // Draw shooting stars
+            spawnShootingStar();
+            for (let i = shootingStars.length - 1; i >= 0; i--) {
+                const ss = shootingStars[i];
+                const endX = ss.x + Math.cos(ss.angle) * ss.length;
+                const endY = ss.y + Math.sin(ss.angle) * ss.length;
+
+                const gradient = ctx.createLinearGradient(ss.x, ss.y, endX, endY);
+                if (isLight) {
+                    gradient.addColorStop(0, `rgba(5, 150, 105, ${ss.opacity})`);
+                    gradient.addColorStop(0.4, `rgba(0, 0, 0, ${ss.opacity * 0.8})`);
+                    gradient.addColorStop(1, `rgba(0, 0, 0, 0)`);
+                } else {
+                    gradient.addColorStop(0, `rgba(0, 230, 153, ${ss.opacity})`);
+                    gradient.addColorStop(0.4, `rgba(255, 255, 255, ${ss.opacity * 0.8})`);
+                    gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
+                }
+
+                ctx.beginPath();
+                ctx.moveTo(ss.x, ss.y);
+                ctx.lineTo(endX, endY);
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 1.8;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+
+                ss.x += Math.cos(ss.angle) * ss.speed;
+                ss.y += Math.sin(ss.angle) * ss.speed;
+                ss.opacity -= ss.decay;
+
+                if (ss.opacity <= 0 || ss.x > canvas.width || ss.y > canvas.height) {
+                    shootingStars.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(animateStars);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        animateStars();
+    </script>
+
+    <!-- Chat Logic & Enterprise Progress Card -->
+    <script>
+        const messageFeed = document.getElementById('message-feed');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const documentUploadButton = document.getElementById('knowledge-upload-button');
+        const documentUploadInput = document.getElementById('document-upload-input');
+        const attachDocumentButton = document.getElementById('attach-document-button');
+        const knowledgeBasePanel = document.querySelector('.knowledge-base-panel');
+        const mobileKnowledgeToggle = document.getElementById('mobile-knowledge-toggle');
+        const knowledgeBaseClose = document.getElementById('knowledge-base-close');
+        const voiceInputButton = document.getElementById('voice-input-button');
+        const knowledgeDocumentCount = document.getElementById('knowledge-document-count');
+        const knowledgeChunkCount = document.getElementById('knowledge-chunk-count');
+        const knowledgeSizeCount = document.getElementById('knowledge-size-count');
+        const knowledgeDocsStat = document.getElementById('knowledge-docs-stat');
+        const knowledgeVectorsStat = document.getElementById('knowledge-vectors-stat');
+        const modelStatus = document.getElementById('model-status');
+        const modelStatusIcon = document.getElementById('model-status-icon');
+        const headerCpuUsage = document.getElementById('header-cpu-usage');
+        const headerMemoryUsage = document.getElementById('header-memory-usage');
+        const headerModels = document.getElementById('header-models');
+        const welcomeUploadButton = document.getElementById('welcome-upload-button');
+        const welcomeRecentDocuments = document.getElementById('welcome-recent-documents');
+        const welcomeDocumentCount = document.getElementById('welcome-document-count');
+        const welcomeVectorCount = document.getElementById('welcome-vector-count');
+        const todayQuestionCount = document.getElementById('today-question-count');
+        const composerModes = document.querySelector('.composer-modes');
+        const composerModeButtons = document.querySelectorAll('[data-chat-option]');
+        const composerSettingsButton = document.getElementById('composer-settings-button');
+        const deepSearchButton = document.getElementById('deep-search-button');
+        const chatPreferences = {
+            deepSearch: false,
+            reasoning: false,
+            fast: true
+        };
+
+        function setChatOption(option, enabled) {
+            chatPreferences[option] = enabled;
+            const modeButton = document.querySelector(`[data-chat-option="${option}"]`);
+            modeButton?.classList.toggle('is-active', enabled);
+            modeButton?.setAttribute('aria-pressed', String(enabled));
+            if (option === 'deepSearch') deepSearchButton.classList.toggle('is-active', enabled);
+        }
+
+        composerModeButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const option = button.dataset.chatOption;
+                if (option === 'deepSearch' && !chatPreferences.deepSearch) {
+                    setChatOption('fast', false);
+                }
+                if (option === 'fast' && !chatPreferences.fast) {
+                    setChatOption('reasoning', false);
+                    setChatOption('deepSearch', false);
+                }
+                if (option === 'reasoning' && !chatPreferences.reasoning) {
+                    setChatOption('fast', false);
+                }
+                setChatOption(option, !chatPreferences[option]);
+            });
+        });
+
+        composerSettingsButton.addEventListener('click', () => {
+            const collapsed = composerModes.classList.toggle('is-collapsed');
+            composerSettingsButton.classList.toggle('is-active', !collapsed);
+            composerSettingsButton.setAttribute('aria-pressed', String(!collapsed));
+        });
+
+        deepSearchButton.addEventListener('click', () => setChatOption('deepSearch', !chatPreferences.deepSearch));
+
+        function getTodayQuestionKey() {
+            return `local-rag-questions-${new Date().toLocaleDateString('sv-SE')}`;
+        }
+
+        function updateTodayQuestionCount(increment = false) {
+            const key = getTodayQuestionKey();
+            const count = Number.parseInt(localStorage.getItem(key) || '0', 10) + (increment ? 1 : 0);
+            localStorage.setItem(key, String(count));
+            if (todayQuestionCount) todayQuestionCount.textContent = count;
+        }
+
+        function updateWelcomeDashboard(data) {
+            if (!welcomeRecentDocuments || !welcomeDocumentCount || !welcomeVectorCount) return;
+            welcomeRecentDocuments.innerHTML = data.documents.length
+                ? data.documents.slice(0, 3).map(document => `<li class="welcome-recent-document">${escapeHtml(document.title.replace(/\.(pdf|md)$/i, ''))}</li>`).join('')
+                : '<li class="welcome-recent-document">Henüz belge yok</li>';
+            welcomeDocumentCount.textContent = data.documentCount;
+            welcomeVectorCount.textContent = new Intl.NumberFormat('tr-TR').format(data.chunkCount);
+            
+            const quickActionBtns = document.querySelectorAll('.quick-action-btn');
+            quickActionBtns.forEach(btn => {
+                if (data.documents && data.documents.length > 0) {
+                    btn.removeAttribute('disabled');
+                } else {
+                    btn.setAttribute('disabled', 'disabled');
+                }
+            });
+        }
+
+        function scrollMessageFeedToBottom(force = false) {
+            const distanceFromBottom = messageFeed.scrollHeight - messageFeed.scrollTop - messageFeed.clientHeight;
+            if (force || distanceFromBottom < 80) {
+                messageFeed.scrollTop = messageFeed.scrollHeight;
+            }
+        }
+
+        document.querySelectorAll('.header-menu').forEach(menu => {
+            menu.addEventListener('toggle', () => {
+                if (!menu.open) return;
+                document.querySelectorAll('.header-menu[open]').forEach(openMenu => {
+                    if (openMenu !== menu) openMenu.open = false;
+                });
+            });
+        });
+
+        async function loadKnowledgeBase() {
+            const list = document.getElementById('knowledge-base-list');
+            const status = document.getElementById('knowledge-base-status');
+            list.innerHTML = '<div class="knowledge-base-empty">Belgeler yükleniyor...</div>';
+
+            try {
+                const response = await fetch('/knowledge-base');
+                if (!response.ok) throw new Error('Bilgi tabanı alınamadı.');
+                const data = await response.json();
+                list.innerHTML = data.documents.length
+                    ? data.documents.map(document => {
+                        const cleanTitle = document.title.replace(/\.(pdf|md|txt|docx)$/i, '');
+                        const extMatch = document.title.match(/\.([a-z0-9]+)$/i);
+                        const ext = extMatch ? extMatch[1].toUpperCase() : 'BELGE';
+                        return `
+                        <article class="knowledge-document" title="${escapeHtml(document.title)}">
+                            <svg class="knowledge-document-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                            <div class="knowledge-document-content">
+                                <span class="knowledge-document-title" title="${escapeHtml(document.title)}">${escapeHtml(cleanTitle)}</span>
+                                <span class="knowledge-document-meta">${ext} &middot; ${new Intl.NumberFormat('tr-TR').format(document.chunks)} parça</span>
+                                <span class="knowledge-document-status">🟢 Hazır</span>
+                            </div>
+                            <details class="knowledge-document-menu">
+                                <summary title="Belge seçenekleri" aria-label="${escapeHtml(document.title)} seçenekleri"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg></summary>
+                                <div class="knowledge-document-menu-options">
+                                    <button type="button" data-reindex-document="${encodeURIComponent(document.title)}">Yeniden indeksle</button>
+                                </div>
+                            </details>
+                        </article>
+                    `;}).join('')
+                    : '<div class="knowledge-base-empty">Henüz indekslenmiş belge yok.</div>';
+                status.textContent = `Hazır: ${data.documentCount} belge, ${data.chunkCount} parça`;
+                knowledgeDocumentCount.textContent = data.documentCount;
+                knowledgeChunkCount.textContent = new Intl.NumberFormat('tr-TR', { notation: 'compact', maximumFractionDigits: 1 }).format(data.chunkCount);
+                knowledgeSizeCount.textContent = formatFileSize(data.totalSizeBytes);
+                knowledgeDocsStat.textContent = data.documentCount;
+                knowledgeVectorsStat.textContent = new Intl.NumberFormat('tr-TR').format(data.chunkCount);
+                updateWelcomeDashboard(data);
+                list.querySelectorAll('[data-reindex-document]').forEach(button => {
+                    button.addEventListener('click', () => reindexDocument(decodeURIComponent(button.dataset.reindexDocument)));
+                });
+            } catch (error) {
+                list.innerHTML = '<div class="knowledge-base-empty">Belge listesi yüklenemedi.</div>';
+                status.textContent = 'İndeks durumu alınamadı';
+            }
+        }
+
+        loadKnowledgeBase();
+        updateTodayQuestionCount();
+
+        function formatFileSize(bytes) {
+            if (!bytes) return '0 MB';
+            return `${(bytes / (1024 * 1024)).toLocaleString('tr-TR', { maximumFractionDigits: 1 })} MB`;
+        }
+
+        async function reindexDocument(fileName) {
+            const status = document.getElementById('knowledge-base-status');
+            status.textContent = `${fileName} yeniden indeksleniyor...`;
+
+            try {
+                const response = await fetch('/reindex-document', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fileName })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Belge yeniden indekslenemedi.');
+                await loadKnowledgeBase();
+            } catch (error) {
+                status.textContent = `İndeksleme hatası: ${error.message}`;
+            }
+        }
+
+        async function loadSystemStatus() {
+            try {
+                const response = await fetch('/system-status');
+                const data = await response.json();
+                modelStatus.textContent = data.modelOnline ? 'Online' : 'Offline';
+                modelStatusIcon.className = `workspace-status-icon ${data.modelOnline ? 'online' : 'offline'}`;
+                headerCpuUsage.textContent = `${data.cpuUsagePercent ?? '-'}%`;
+                headerMemoryUsage.textContent = data.memoryUsedGb ? `${data.memoryUsedGb.toLocaleString('tr-TR')} GB` : '-';
+
+                const drawerCpuVal = document.getElementById('drawer-cpu-usage-val');
+                const drawerCpuProg = document.getElementById('drawer-cpu-progress');
+                if (drawerCpuVal) drawerCpuVal.textContent = `${data.cpuUsagePercent ?? 0}%`;
+                if (drawerCpuProg) drawerCpuProg.style.width = `${data.cpuUsagePercent ?? 0}%`;
+
+                const drawerRamVal = document.getElementById('drawer-ram-usage-val');
+                const drawerRamProg = document.getElementById('drawer-ram-progress');
+                if (drawerRamVal && data.memoryUsedGb) {
+                    drawerRamVal.textContent = `${data.memoryUsedGb.toLocaleString('tr-TR')} GB`;
+                    const totalRam = data.memoryTotalGb || 16;
+                    const ramPercent = Math.min(100, Math.round((data.memoryUsedGb / totalRam) * 100));
+                    if (drawerRamProg) drawerRamProg.style.width = `${ramPercent}%`;
+                }
+
+                let formattedModel = 'Model bulunamadı';
+                if (data.models?.length) {
+                    const firstModel = data.models[0].toLowerCase();
+                    if (firstModel.includes('llama3') || firstModel.includes('llama 3')) formattedModel = 'Llama 3';
+                    else if (firstModel.includes('mistral')) formattedModel = 'Mistral';
+                    else formattedModel = data.models[0];
+                }
+                headerModels.textContent = formattedModel;
+                const inputModelName = document.getElementById('input-model-name');
+                if (inputModelName) {
+                    inputModelName.innerHTML = `${formattedModel} &middot; Local`;
+                }
+                const chatStatusModel = document.getElementById('chat-status-model');
+                if (chatStatusModel) {
+                    chatStatusModel.textContent = formattedModel;
+                }
+            } catch (error) {
+                modelStatus.textContent = 'Offline';
+                modelStatusIcon.className = 'workspace-status-icon offline';
+                headerCpuUsage.textContent = '-';
+                headerMemoryUsage.textContent = '-';
+                headerModels.textContent = 'Model bilinmiyor';
+            }
+        }
+
+        loadSystemStatus();
+
+        function closeKnowledgeBase() {
+            knowledgeBasePanel.classList.remove('is-open');
+        }
+
+        documentUploadButton.addEventListener('click', () => documentUploadInput.click());
+        attachDocumentButton.addEventListener('click', () => documentUploadInput.click());
+        welcomeUploadButton.addEventListener('click', () => documentUploadInput.click());
+        welcomeUploadButton.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            welcomeUploadButton.classList.add('dragover');
+        });
+        welcomeUploadButton.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            welcomeUploadButton.classList.remove('dragover');
+        });
+        welcomeUploadButton.addEventListener('drop', (e) => {
+            e.preventDefault();
+            welcomeUploadButton.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                documentUploadInput.files = e.dataTransfer.files;
+                documentUploadInput.dispatchEvent(new Event('change'));
+            }
+        });
+        mobileKnowledgeToggle.addEventListener('click', () => knowledgeBasePanel.classList.add('is-open'));
+        knowledgeBaseClose.addEventListener('click', closeKnowledgeBase);
+        documentUploadInput.addEventListener('change', async () => {
+            const [file] = documentUploadInput.files;
+            if (!file) return;
+
+            const status = document.getElementById('knowledge-base-status');
+            const formData = new FormData();
+            formData.append('document', file);
+            documentUploadButton.disabled = true;
+            status.textContent = `${file.name} yükleniyor ve indeksleniyor...`;
+
+            try {
+                const response = await fetch('/upload-document', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Belge yüklenemedi.');
+
+                await loadKnowledgeBase();
+                status.textContent = `Hazır: ${data.documentCount} belge, ${data.chunkCount} parça`;
+            } catch (error) {
+                status.textContent = `Yükleme hatası: ${error.message}`;
+            } finally {
+                documentUploadInput.value = '';
+                documentUploadButton.disabled = false;
+            }
+        });
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let speechRecognition;
+
+        if (SpeechRecognition) {
+            speechRecognition = new SpeechRecognition();
+            speechRecognition.lang = 'tr-TR';
+            speechRecognition.continuous = false;
+            speechRecognition.interimResults = true;
+
+            speechRecognition.onstart = () => {
+                voiceInputButton.classList.add('is-listening');
+                voiceInputButton.title = 'Dinleme durdur';
+            };
+
+            speechRecognition.onresult = (event) => {
+                const transcript = Array.from(event.results)
+                    .map(result => result[0].transcript)
+                    .join('');
+                userInput.value = transcript;
+                userInput.focus();
+            };
+
+            speechRecognition.onerror = (event) => {
+                if (event.error === 'not-allowed') {
+                    voiceInputButton.title = 'Mikrofon izni gerekli';
+                }
+            };
+
+            speechRecognition.onend = () => {
+                voiceInputButton.classList.remove('is-listening');
+                voiceInputButton.title = 'Sesle yaz';
+            };
+
+            voiceInputButton.addEventListener('click', () => {
+                if (voiceInputButton.classList.contains('is-listening')) {
+                    speechRecognition.stop();
+                } else {
+                    speechRecognition.start();
+                }
+            });
+        } else {
+            voiceInputButton.disabled = true;
+            voiceInputButton.title = 'Tarayıcınız sesle yazmayı desteklemiyor';
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function sendQuickPrompt(promptText) {
+            userInput.value = promptText;
+            sendMessage();
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            document.querySelector('.welcome-state')?.remove();
+            updateTodayQuestionCount(true);
+            appendUserMessage(message);
+            userInput.value = '';
+            userInput.disabled = true;
+            sendBtn.disabled = true;
+
+            const thinkingCard = createEnterpriseThinkingCard();
+
+            try {
+                const response = await fetch('/chat-stream', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message, ...chatPreferences })
+                });
+
+                if (!response.ok || !response.body) {
+                    throw new Error("Server communication error.");
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+
+                let fullText = '';
+                let ragContext = '';
+                let streamBubbleObj = null;
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const events = buffer.split('\n\n');
+                    buffer = events.pop();
+
+                    for (const eventStr of events) {
+                        const trimmed = eventStr.trim();
+                        if (!trimmed.startsWith('data: ')) continue;
+
+                        try {
+                            const data = JSON.parse(trimmed.replace('data: ', ''));
+
+                            if (data.type === 'context') {
+                                ragContext = data.context;
+                                thinkingCard.updateStep(1, true); // Step 1 complete
+                            } else if (data.type === 'token') {
+                                if (!streamBubbleObj) {
+                                    thinkingCard.stop();
+                                    streamBubbleObj = createAiStreamBubble();
+                                }
+                                fullText += data.token;
+                                streamBubbleObj.updateText(fullText);
+                            } else if (data.type === 'done') {
+                                if (streamBubbleObj) {
+                                    streamBubbleObj.finalize(fullText, ragContext);
+                                }
+                            }
+                        } catch (e) {}
+                    }
+                }
+
+                if (!streamBubbleObj && fullText) {
+                    thinkingCard.stop();
+                    appendAiMessage(fullText, ragContext);
+                }
+            } catch (err) {
+                thinkingCard.stop();
+                let errMsg = '**Bağlantı Hatası**\n\n' +
+                             'Arka plan Node.js sunucusuna ulaşılamadı.\n\n' +
+                             '**Çözüm Adımları:**\n' +
+                             '1. Masaüstünüzdeki **Local RAG Assistant** kısayoluna çift tıklayarak sistemi başlatın.\n' +
+                             '2. Adres çubuğunda `http://localhost:3000` yazdığından emin olun (`file://` olmamalıdır).\n' +
+                             '3. Arka planda `Baslat.bat` penceresinin açık olduğunu kontrol edin.';
+                appendAiMessage(errMsg, null);
+            } finally {
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                userInput.focus();
+            }
+        }
+
+        function createEnterpriseThinkingCard() {
+            const row = document.createElement('div');
+            row.className = 'msg-row msg-ai';
+            
+            const avatar = document.createElement('img');
+            avatar.src = 'logo.jpg';
+            avatar.className = 'msg-ai-avatar';
+            avatar.alt = 'AI Avatar';
+
+            const card = document.createElement('div');
+            card.className = 'thinking-enterprise-card';
+            card.innerHTML = `
+                <span class="thinking-label">AI is thinking...</span>
+                <span class="thinking-dots" aria-label="Yanıt hazırlanıyor"><span></span><span></span><span></span></span>
+            `;
+
+            row.appendChild(avatar);
+            row.appendChild(card);
+            messageFeed.appendChild(row);
+            scrollMessageFeedToBottom(true);
+
+            return {
+                updateStep: () => {},
+                stop: () => {
+                    row.remove();
+                }
+            };
+        }
+
+        function formatMarkdown(rawText) {
+            if (!rawText) return '';
+            let text = rawText;
+            const tableRegex = /(?:(?:^|\n)\|[^\n]+\|\n\|[-:\s|]+\|\n(?:\|[^\n]+\|\n?)+)/g;
+            text = text.replace(tableRegex, (match) => {
+                const rows = match.trim().split('\n').map(r => r.trim());
+                if (rows.length < 2) return match;
+                const headerCells = rows[0].split('|').slice(1, -1).map(c => `<th style="padding:8px 12px;border:1px solid #252525;background:#141414;color:#E8E8E8;text-align:left;">${c.trim()}</th>`).join('');
+                const bodyRows = rows.slice(2).map(row => {
+                    const cells = row.split('|').slice(1, -1).map(c => `<td style="padding:8px 12px;border:1px solid #252525;color:#E8E8E8;">${c.trim()}</td>`).join('');
+                    return `<tr>${cells}</tr>`;
+                }).join('');
+                return `\n<div style="overflow-x:auto;margin:12px 0;"><table style="width:100%;border-collapse:collapse;background:#0E0E0E;border:1px solid #252525;border-radius:8px;font-size:14px;color:#E8E8E8;"><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table></div>\n`;
+            });
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+                .replace(/`([^`]+)`/g, '<code style="background:#191919;border:1px solid #252525;padding:2px 6px;border-radius:6px;color:#E8E8E8;">$1</code>')
+                .replace(/\n/g, '<br>');
+        }
+
+        function createAiStreamBubble() {
+            const row = document.createElement('div');
+            row.className = 'msg-row msg-ai';
+            
+            const avatar = document.createElement('img');
+            avatar.src = 'logo.jpg';
+            avatar.className = 'msg-ai-avatar';
+            avatar.alt = 'AI Avatar';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'msg-bubble';
+            
+            const textDiv = document.createElement('div');
+            bubble.appendChild(textDiv);
+
+            row.appendChild(avatar);
+            row.appendChild(bubble);
+            messageFeed.appendChild(row);
+            scrollMessageFeedToBottom(true);
+
+            return {
+                updateText: (rawText) => {
+                    textDiv.innerText = rawText;
+                    scrollMessageFeedToBottom();
+                },
+                finalize: (rawText, context) => {
+                    textDiv.innerHTML = formatMarkdown(rawText);
+
+                    appendAnalysisSummary(bubble, context);
+
+                    if (context && context.trim().length > 0) {
+                        const contextCard = document.createElement('div');
+                        contextCard.className = 'knowledge-retrieval-card';
+                        contextCard.innerHTML = `
+                            <div class="retrieval-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
+                                <div class="retrieval-title">
+                                    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                                    <span>Document Intelligence Layer</span>
+                                </div>
+                                <span class="confidence-badge">94% Confidence Match</span>
+                            </div>
+                            <div class="retrieval-body" style="display:none;">
+                                <div>${escapeHtml(context)}</div>
+                            </div>
+                        `;
+                        bubble.appendChild(contextCard);
+                    }
+                    scrollMessageFeedToBottom();
+                }
+            };
+        }
+
+        function appendUserMessage(text) {
+            const row = document.createElement('div');
+            row.className = 'msg-row msg-user';
+            row.innerHTML = `<div class="msg-bubble">${escapeHtml(text)}</div>`;
+            messageFeed.appendChild(row);
+            scrollMessageFeedToBottom(true);
+        }
+
+        function appendAiMessage(reply, context) {
+            const row = document.createElement('div');
+            row.className = 'msg-row msg-ai';
+            
+            let formattedReply = formatMarkdown(reply);
+
+            const bubble = document.createElement('div');
+            bubble.className = 'msg-bubble';
+            const responseContent = document.createElement('div');
+            responseContent.innerHTML = formattedReply;
+            bubble.appendChild(responseContent);
+            appendAnalysisSummary(bubble, context);
+
+            if (context && context.trim().length > 0) {
+                bubble.insertAdjacentHTML('beforeend', `
+                    <div class="knowledge-retrieval-card">
+                        <div class="retrieval-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
+                            <div class="retrieval-title">
+                                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                                <span>Document Intelligence Layer</span>
+                            </div>
+                            <span class="confidence-badge">94% Confidence Match</span>
+                        </div>
+                        <div class="retrieval-body" style="display:none;">
+                            <div>${escapeHtml(context)}</div>
+                        </div>
+                    </div>
+                `);
+            }
+
+            row.innerHTML = `<img src="logo.jpg" class="msg-ai-avatar" alt="AI Avatar">`;
+            row.appendChild(bubble);
+            messageFeed.appendChild(row);
+            scrollMessageFeedToBottom(true);
+        }
+
+        function appendAnalysisSummary(bubble, context) {
+            const sourceNames = [...new Set(
+                [...(context || '').matchAll(/\[Kaynak Belge \d+: ([^\]]+)\]/g)]
+                    .map(match => match[1])
+            )];
+
+            if (sourceNames.length === 0) return;
+
+            const summary = document.createElement('details');
+            summary.className = 'analysis-summary';
+            summary.innerHTML = `
+                <summary>Yanıt yaklaşımı</summary>
+                <div class="analysis-summary-body">
+                    Yanıt, soruyla eşleşen ${sourceNames.length} kaynak belge üzerinden oluşturuldu.
+                    <ul>${sourceNames.map(name => `<li>${escapeHtml(name)}</li>`).join('')}</ul>
+                </div>
+            `;
+            bubble.appendChild(summary);
+        }
+
+        function escapeHtml(text) {
+            if (text == null) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+    </script>
+    <!-- Settings Drawer -->
+    <div class="settings-overlay" id="settings-overlay"></div>
+    <div class="settings-drawer" id="settings-drawer">
+        <div class="settings-header">
+            <h2>Ayarlar</h2>
+            <button class="settings-close" id="settings-close" title="Kapat">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <div class="settings-content">
+            <div class="settings-section">
+                <h3>Genel</h3>
+                <div class="setting-item">
+                    <label>Tema</label>
+                    <div class="setting-control">
+                        <select id="drawer-theme-select">
+                            <option value="dark" selected>Koyu</option>
+                            <option value="light">Açık</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <label>Dil</label>
+                    <div class="setting-control">
+                        <select id="drawer-lang-select">
+                            <option value="tr" selected>Türkçe</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="settings-section">
+                <h3>AI</h3>
+                <div class="setting-item">
+                    <label>Aktif Model</label>
+                    <div class="setting-value">Llama 3 (Local)</div>
+                </div>
+                <div class="setting-item">
+                    <label>Sıcaklık (Temp)</label>
+                    <div class="setting-value">0.7</div>
+                </div>
+                <div class="setting-item">
+                    <label>Bağlam Boyutu</label>
+                    <div class="setting-value">4096</div>
+                </div>
+                <div class="setting-item">
+                    <label>En İyi K (Top K)</label>
+                    <div class="setting-value">40</div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>RAG</h3>
+                <div class="setting-item">
+                    <label>Parça Boyutu</label>
+                    <div class="setting-value">1024</div>
+                </div>
+                <div class="setting-item">
+                    <label>Parça Örtüşmesi</label>
+                    <div class="setting-value">200</div>
+                </div>
+                <div class="setting-item">
+                    <label>Geri Çağırma Sayısı</label>
+                    <div class="setting-value">5</div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>Sistem</h3>
+                <div class="setting-item vertical">
+                    <label>CPU Kullanımı</label>
+                    <div class="setting-progress-wrapper">
+                        <div class="setting-value" id="drawer-cpu-usage-val">16%</div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" id="drawer-cpu-progress" style="width: 16%;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="setting-item vertical">
+                    <label>RAM Kullanımı</label>
+                    <div class="setting-progress-wrapper">
+                        <div class="setting-value" id="drawer-ram-usage-val">11 GB</div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" id="drawer-ram-progress" style="width: 68%;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="setting-item vertical">
+                    <label>Vektör Veritabanı</label>
+                    <div class="setting-value">SQLite-VSS</div>
+                </div>
+                <div class="setting-item vertical">
+                    <label>Embedding Modeli</label>
+                    <div class="setting-value">nomic-embed-text</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const openSettingsBtn = document.getElementById('open-settings-drawer');
+        const settingsDrawer = document.getElementById('settings-drawer');
+        const settingsOverlay = document.getElementById('settings-overlay');
+        const settingsClose = document.getElementById('settings-close');
+
+        function toggleSettings() {
+            settingsDrawer.classList.toggle('is-open');
+            settingsOverlay.classList.toggle('is-active');
+        }
+
+        if (openSettingsBtn) openSettingsBtn.addEventListener('click', toggleSettings);
+        if (settingsClose) settingsClose.addEventListener('click', toggleSettings);
+        if (settingsOverlay) settingsOverlay.addEventListener('click', toggleSettings);
+
+        // Theme Toggle Logic
+        const themeSelect = document.getElementById('drawer-theme-select');
+        if (themeSelect) {
+            function applyTheme(theme) {
+                if (theme === 'system') theme = 'dark'; // Fallback
+                document.documentElement.setAttribute('data-theme', theme);
+            }
+
+            let savedTheme = localStorage.getItem('theme') || 'dark';
+            if (savedTheme === 'system') {
+                savedTheme = 'dark';
+                localStorage.setItem('theme', 'dark');
+            }
+            themeSelect.value = savedTheme;
+            applyTheme(savedTheme);
+
+            themeSelect.addEventListener('change', (e) => {
+                const theme = e.target.value;
+                applyTheme(theme);
+                localStorage.setItem('theme', theme);
+            });
+        }
+
+        // i18n Translation Logic
+        const trToEn = {
+            "Yerel kullanıcı": "Local user",
+            "Veriler bu cihazda kalır.": "Data stays on this device.",
+            "Sistem durumunu yenile": "Refresh system status",
+            "Belge Ekle": "Add Document",
+            "İndeks denetleniyor...": "Checking index...",
+            "Belge": "Document",
+            "Vektör": "Vector",
+            "Belgelerinize Sorun": "Ask your documents",
+            "Yapay zeka ile belgelerinizi analiz edin, özetleyin ve hızlıca içgörüler elde edin.": "Analyze and summarize your documents with AI.",
+            "Dosyayı buraya sürükleyin veya seçin": "Drag and drop or select file here",
+            "PDF • DOCX • TXT gibi desteklenen formatlar": "Supported formats: PDF • DOCX • TXT",
+            "Son Kullanılanlar": "Recent Documents",
+            "Bugünkü İstatistik": "Today's Statistics",
+            "soru": "questions",
+            "belge": "documents",
+            "vektör": "vectors",
+            "Belgeyi Özetle": "Summarize Document",
+            "Bilgi Bul": "Find Information",
+            "Önemli Noktaları Çıkar": "Extract Key Points",
+            "Belgeleri Karşılaştır": "Compare Documents",
+            "Ayarlar": "Settings",
+            "Genel": "General",
+            "Tema": "Theme",
+            "Sistem": "System",
+            "Koyu": "Dark",
+            "Açık": "Light",
+            "Dil": "Language",
+            "Türkçe": "Turkish",
+            "Animasyonlar": "Animations",
+            "Kapalı": "Off",
+            "Aktif Model": "Active Model",
+            "Yüksek değerler daha yaratıcı cevaplar üretir.": "Higher values produce more creative responses.",
+            "CPU Kullanımı": "CPU Usage",
+            "RAM Kullanımı": "RAM Usage",
+            "Belgeleriniz hakkında bir şey sorun...": "Ask anything about your documents...",
+            "Local AI": "Local AI",
+            "Belgeler yükleniyor...": "Loading documents...",
+            "Henüz belge yok": "No documents yet",
+            "Henüz indekslenmiş belge yok.": "No indexed documents yet.",
+            "Belge listesi yüklenemedi.": "Failed to load document list.",
+            "İndeks durumu alınamadı": "Could not retrieve index status",
+            "Yeniden indeksle": "Reindex",
+            "parça": "chunks",
+            "Hazır:": "Ready:",
+            "Model bulunamadı": "Model not found",
+            "Model bilinmiyor": "Unknown model",
+            "Yükleme hatası:": "Upload error:",
+            "İndeksleme hatası:": "Indexing error:",
+            "Sıcaklık (Temp)": "Temperature",
+            "Bağlam Boyutu": "Context Size",
+            "En İyi K (Top K)": "Top K",
+            "Parça Boyutu": "Chunk Size",
+            "Parça Örtüşmesi": "Chunk Overlap",
+            "Geri Çağırma Sayısı": "Retrieval Count",
+            "Vektör Veritabanı": "Vector Database",
+            "Embedding Modeli": "Embedding Model"
+        };
+
+        function t(text) {
+            const lang = localStorage.getItem('language') || 'tr';
+            if (lang === 'en') return trToEn[text] || text;
+            return text;
+        }
+
+        function translateNode(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                let text = node.nodeValue.trim();
+                if (text) {
+                    if (node.originalText === undefined) node.originalText = text;
+                    let finalText = t(node.originalText);
+                    
+                    if (node.originalText.startsWith('Hazır:')) {
+                        const parts = node.originalText.split(' ');
+                        if (parts.length >= 5) finalText = `${t('Hazır:')} ${parts[1]} ${t('belge')}, ${parts[3]} ${t('parça')}`;
+                    } else if (node.originalText.includes('yeniden indeksleniyor...')) {
+                        finalText = node.originalText.replace('yeniden indeksleniyor...', t('yeniden indeksleniyor...'));
+                    } else if (node.originalText.includes('yükleniyor ve indeksleniyor...')) {
+                        finalText = node.originalText.replace('yükleniyor ve indeksleniyor...', t('yükleniyor ve indeksleniyor...'));
+                    }
+                    
+                    if (finalText !== node.nodeValue.trim()) {
+                        node.nodeValue = node.nodeValue.replace(node.nodeValue.trim(), finalText);
+                    }
+                }
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                if (node.classList && (node.classList.contains('msg-row') || node.id === 'chat-messages')) return;
+                
+                if (node.nodeName !== 'SCRIPT' && node.nodeName !== 'STYLE') {
+                    node.childNodes.forEach(translateNode);
+                }
+                if (node.placeholder) {
+                    if (node.originalPlaceholder === undefined) node.originalPlaceholder = node.placeholder;
+                    node.placeholder = t(node.originalPlaceholder);
+                }
+                if (node.title) {
+                    if (node.originalTitle === undefined) node.originalTitle = node.title;
+                    node.title = t(node.originalTitle);
+                }
+            }
+        }
+
+        function applyLanguage() {
+            translateNode(document.body);
+            document.documentElement.lang = localStorage.getItem('language') || 'tr';
+        }
+
+        const langSelect = document.getElementById('drawer-lang-select');
+        if (langSelect) {
+            const savedLang = localStorage.getItem('language') || 'tr';
+            langSelect.value = savedLang === 'en' ? 'en' : 'tr';
+            
+            langSelect.addEventListener('change', (e) => {
+                localStorage.setItem('language', e.target.value);
+                window.location.reload(); 
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            applyLanguage();
+            
+            const observer = new MutationObserver((mutations) => {
+                let shouldTranslate = false;
+                for (let m of mutations) {
+                    if (m.target.id !== 'chat-messages' && !m.target.classList?.contains('msg-row')) {
+                        shouldTranslate = true;
+                        break;
+                    }
+                }
+                if (shouldTranslate) {
+                    observer.disconnect();
+                    applyLanguage();
+                    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+                }
+            });
+            
+            observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+        });
+    </script>
+</body>
+</html>

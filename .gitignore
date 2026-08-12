@@ -1,0 +1,26 @@
+# Bağımlılıklar
+node_modules/
+
+# Veritabanı dosyaları
+database/*.db
+database/*.sqlite
+database/*.sqlite3
+
+# Yüklenen Belgeler (Kullanıcı verileri)
+docs/*.pdf
+docs/*.md
+!docs/.gitkeep
+
+# Çevresel Değişkenler
+.env
+.env.local
+
+# Sistem ve Editör Dosyaları
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Log dosyaları
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

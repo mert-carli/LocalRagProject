@@ -1,0 +1,19 @@
+{
+  "name": "local-rag-assistant",
+  "version": "1.0.0",
+  "description": "Local-RAG-Assistant Türkçe PDF Soru Cevap Asistanı",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^13.0.1",
+    "express": "^5.2.1",
+    "foundry-local-sdk": "^1.2.3",
+    "multer": "^2.2.0",
+    "pdf-parse": "^1.1.1"
+  }
+}
