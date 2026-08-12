@@ -23,6 +23,20 @@ Verileriniz hiçbir dış sunucuya gönderilmez; tüm metin parçalama, indeksle
 
 ---
 
+## Özellikler
+
+- ✅ **%100 Çevrimdışı (Offline) Çalışma:** İnternet bağlantısı gerektirmez, verileriniz cihazınızdan dışarı çıkmaz.
+- ✅ **Harici API Anahtarı Gerektirmez:** OpenAI veya diğer üçüncü taraf paralı API'lere bağımlı değildir.
+- ✅ **PDF ve Markdown Desteği:** Yüklediğiniz belgeleri otomatik olarak analiz eder ve indeksler.
+- ✅ **Ollama ile Yerel LLM Desteği:** Mistral, Llama3 vb. açık kaynaklı yerel modelleri destekler.
+- ✅ **Kaynak Gösterimli Cevaplar:** Her yanıtın altında ilgili metin bağlamını (context) ve kaynak belgeyi gösterir.
+- ✅ **SQLite Tabanlı Hızlı İndeksleme:** `better-sqlite3` ile yüksek performanslı yerel vektör ve kelime araması.
+- ✅ **Türkçe Karakter ve Ek Duyarlı Arama:** Türkçe kök ve ek ayıklama mekanizmasıyla doğru metin eşleştirme.
+- ✅ **Canlı Akışlı Yanıt Üretimi (SSE):** Cevapları beklemeden kelime kelime anlık olarak ekrana basar.
+- ✅ **Windows Tek Tık Başlatma:** `Baslat.bat` ile arka plan servislerini ve web arayüzünü otomatik açar.
+
+---
+
 ## Mimari ve Teknolojiler
 
 - **Backend:** Node.js, Express.js
