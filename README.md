@@ -23,6 +23,18 @@ Verileriniz hiçbir dış sunucuya gönderilmez; tüm metin parçalama, indeksle
 
 ---
 
+## Gizlilik ve Güvenlik
+
+Projenin en temel odak noktası tam veri gizliliği ve güvenliğidir:
+
+- ❌ **Bulut API Kullanmaz:** OpenAI, Anthropic veya başka bir dış bulut servisine istek atmaz.
+- ❌ **Harici Sunucuya Veri Göndermez:** Yüklediğiniz belgeler veya sorularınız cihazınızdan dışarı çıkmaz.
+- ❌ **Telemetri ve Takip Yoktur:** Belge içerikleriniz veya kullanım verileriniz asla kaydedilmez ya da toplanmaz.
+
+✔ **Tüm işlemler %100 yerel bilgisayarınızda gerçekleşir.**
+
+---
+
 ## RAG Çalışma Mimarisi
 
 ```text
