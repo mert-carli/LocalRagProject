@@ -23,6 +23,53 @@ Verileriniz hiçbir dış sunucuya gönderilmez; tüm metin parçalama, indeksle
 
 ---
 
+## RAG Çalışma Mimarisi
+
+```text
+[ PDF / Markdown Belgeleri ]
+           │
+           ▼
+  [ Document Parser ]      ── (pdf-parse / fs)
+           │
+           ▼
+   [ Text Chunking ]       ── (Metin parçalama & temizleme)
+           │
+           ▼
+   [ SQLite Index ]        ── (rag.db / Türkçe Kök-Ek İndeksi)
+           │
+ ──────────┼────────── (Soru & Arama Akışı)
+           │
+   [ User Question ]       ── (Kullanıcı Sorusu)
+           │
+           ▼
+    [ Retriever ]          ── (İlgili Bağlam Çıkarımı)
+           │
+           ▼
+   [ Ollama LLM ]          ── (Mistral / Llama3 Yerel Model)
+           │
+           ▼
+[ Akışlı Yanıt (SSE) + Kaynak Bağlamı ]
+```
+
+<details>
+<summary><b>📐 Görsel Akış Şeması (Mermaid)</b></summary>
+
+```mermaid
+flowchart TD
+    A[📄 PDF / Markdown Belgeleri] --> B[⚙️ Document Parser]
+    B --> C[✂️ Text Chunking]
+    C --> D[💾 SQLite Index - rag.db]
+    
+    E[❓ Kullanıcı Sorusu] --> F[🔍 Retriever / Arama Motoru]
+    D --> F
+    F --> G[🧠 Ollama LLM - Mistral/Llama3]
+    G --> H[💬 Akışlı Yanıt & Kaynak Bağlamı]
+```
+
+</details>
+
+---
+
 ## Özellikler
 
 - ✅ **%100 Çevrimdışı (Offline) Çalışma:** İnternet bağlantısı gerektirmez, verileriniz cihazınızdan dışarı çıkmaz.
